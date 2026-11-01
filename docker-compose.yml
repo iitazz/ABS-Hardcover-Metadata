@@ -1,0 +1,8 @@
+services:
+  abs-hardcover:
+    image: ghcr.io/iitazz/abs-hardcover-metadata:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/data

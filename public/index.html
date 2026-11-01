@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ABS Hardcover Provider</title>
+<style>
+:root{--bg:#0f1219;--card:#181d28;--bd:#262d3d;--tx:#e6e9f0;--mu:#8b94a8;--ac:#6c8cff;--ok:#34d399;--er:#f87171}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 system-ui,sans-serif}
+main{max-width:1000px;margin:auto;padding:24px}h1{font-size:20px;margin:0 0 20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:16px}
+.grid .card{margin:0}.lbl{color:var(--mu);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.val{font-size:28px;font-weight:600}.ok{color:var(--ok)}.er{color:var(--er)}
+h2{font-size:15px;margin:0 0 12px}
+input{background:var(--bg);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:8px 10px;width:100%}
+label{display:block;color:var(--mu);font-size:12px;margin:10px 0 4px}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600}
+button.s{background:var(--bd)}.row{display:flex;gap:8px;align-items:end}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:700px){.cols{grid-template-columns:1fr}}
+.chart{display:flex;align-items:flex-end;gap:3px;height:100px}
+.bar{flex:1;display:flex;flex-direction:column-reverse;min-height:2px;background:var(--bd);border-radius:3px;overflow:hidden}
+.bar i{display:block}.bar .g{background:var(--ok)}.bar .r{background:var(--er)}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--bd)}
+th{color:var(--mu);font-weight:500;font-size:12px}.pill{padding:2px 8px;border-radius:99px;font-size:12px}
+.pill.ok{background:#34d3991f}.pill.er{background:#f871711f}small{color:var(--mu)}
+#msg{margin-left:8px;color:var(--mu)}pre{white-space:pre-wrap;max-height:260px;overflow:auto;font-size:12px;color:var(--mu)}
+</style></head><body><main>
+<div id="auth" class="card" style="display:none;max-width:380px;margin:80px auto">
+<h2 id="authTitle"></h2><small id="authHelp"></small>
+<label>Password</label><input id="pw" type="password">
+<p><button id="authBtn">Continue</button><span id="authMsg" class="er" style="margin-left:8px"></span></p></div>
+<div id="app" style="display:none">
+<h1>📚 ABS Hardcover Provider <button class="s" id="logout" style="float:right">Log out</button></h1>
+<div class="grid">
+<div class="card"><div class="lbl">Requests</div><div class="val" id="total">–</div></div>
+<div class="card"><div class="lbl">Succeeded</div><div class="val ok" id="ok">–</div></div>
+<div class="card"><div class="lbl">Failed</div><div class="val er" id="failed">–</div></div>
+<div class="card"><div class="lbl">Avg latency</div><div class="val" id="avg">–</div></div>
+</div>
+<div class="card"><h2>Last 24 hours</h2><div class="chart" id="chart"></div></div>
+<div class="cols">
+<div class="card"><h2>Settings</h2>
+<label>Hardcover API token <small id="tokst"></small></label><input id="token" type="password" placeholder="leave blank to keep current">
+<label>Authorization key (set the same in Audiobookshelf)</label><input id="authKey">
+<label>Max results</label><input id="max" type="number" min="1" max="50">
+<p><button id="save">Save</button><span id="msg"></span></p>
+<small>Provider URL for ABS: <code id="url"></code></small></div>
+<div class="card"><h2>Test search</h2><div class="row"><input id="q" placeholder="Book title or author"><button id="go">Search</button></div>
+<pre id="out"></pre></div></div>
+<div class="card"><div class="row" style="justify-content:space-between;align-items:center"><h2>Recent requests</h2><button class="s" id="clear">Clear</button></div>
+<table><thead><tr><th>Time</th><th>Query</th><th>Status</th><th>Results</th><th>ms</th></tr></thead><tbody id="rows"></tbody></table></div>
+</div></main><script>
+const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('url').textContent=location.origin;
+async function stats(){const s=await (await fetch('admin/api/stats')).json();
+$('total').textContent=s.total;$('ok').textContent=s.ok;$('failed').textContent=s.failed;$('avg').textContent=s.avgMs+' ms';
+const mx=Math.max(1,...s.hours.map(h=>h.ok+h.failed));
+$('chart').innerHTML=s.hours.map(h=>`<div class="bar" title="${new Date(h.start).getHours()}:00 — ${h.ok} ok, ${h.failed} failed" style="height:${Math.max(2,(h.ok+h.failed)/mx*100)}%"><i class="g" style="height:${h.ok/(h.ok+h.failed||1)*100}%"></i><i class="r" style="height:${h.failed/(h.ok+h.failed||1)*100}%"></i></div>`).join('');
+$('rows').innerHTML=s.recent.map(l=>`<tr><td>${new Date(l.time).toLocaleString()}</td><td>${esc(l.query)} ${l.author?'<small>by '+esc(l.author)+'</small>':''}</td><td><span class="pill ${l.ok?'ok':'er'}" title="${esc(l.error)}">${l.status}${l.error?' '+esc(l.error):''}</span></td><td>${l.results??'–'}</td><td>${l.ms}</td></tr>`).join('')||'<tr><td colspan=5><small>No requests yet</small></td></tr>';}
+async function cfg(){const c=await (await fetch('admin/api/config')).json();
+$('authKey').value=c.authKey;$('max').value=c.maxResults;$('tokst').textContent=c.hasToken?'✓ set':'✗ not set';}
+$('save').onclick=async()=>{const r=await fetch('admin/api/config',{method:'PUT',body:JSON.stringify({hardcoverToken:$('token').value,authKey:$('authKey').value,maxResults:$('max').value})});
+$('msg').textContent=r.ok?'Saved':'Failed';$('token').value='';cfg();};
+$('go').onclick=async()=>{if(!$('q').value)return;$('out').textContent='Searching…';const r=await fetch('admin/api/test?query='+encodeURIComponent($('q').value));const j=await r.json();
+$('out').textContent=j.error?'Error: '+j.error:j.matches.map(m=>`${m.title} — ${m.author||'?'} (${m.publishedYear||'?'})`).join('\n')||'No results';};
+$('q').onkeydown=e=>e.key==='Enter'&&$('go').click();
+$('clear').onclick=async()=>{await fetch('admin/api/logs',{method:'DELETE'});stats();};
+const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.status===401&&!String(a[0]).includes('login'))init();return r;};
+let timer;
+async function init(){clearInterval(timer);const s=await (await _f('admin/api/status')).json();
+$('app').style.display=s.loggedIn?'':'none';$('auth').style.display=s.loggedIn?'none':'';
+if(s.loggedIn){cfg();stats();timer=setInterval(stats,5000);return;}
+$('authTitle').textContent=s.setup?'Log in':'Welcome — create your admin password';
+$('authHelp').textContent=s.setup?'':'This is the first run. Choose a password (min 8 characters) to secure this page.';
+$('authBtn').onclick=async()=>{const r=await _f('admin/api/'+(s.setup?'login':'setup'),{method:'POST',body:JSON.stringify({password:$('pw').value})});
+if(r.ok){$('pw').value='';init();}else $('authMsg').textContent=(await r.json()).error;};}
+$('pw').onkeydown=e=>e.key==='Enter'&&$('authBtn').click();
+$('logout').onclick=async()=>{await _f('admin/api/logout');init();};
+init();
+</script></body></html>
