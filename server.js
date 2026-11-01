@@ -134,7 +134,7 @@ async function runSearch(query, author) {
 async function handleAdmin(req, res, url) {
   const p = url.pathname.replace(/\/$/, '');
   if (p === '/admin') {
-    res.writeHead(200, { 'content-type': 'text/html' });
+    res.writeHead(200, { 'content-type': 'text/html', 'cache-control': 'no-store' });
     return res.end(fs.readFileSync(path.join(__dirname, 'public', 'index.html')));
   }
   if (p === '/admin/api/status') return send(res, 200, { setup: !!config.adminHash, loggedIn: isLoggedIn(req) });

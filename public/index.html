@@ -25,8 +25,10 @@ th{color:var(--mu);font-weight:500;font-size:12px}.pill{padding:2px 8px;border-r
 </style></head><body><main>
 <div id="auth" class="card" style="display:none;max-width:380px;margin:80px auto">
 <h2 id="authTitle"></h2><small id="authHelp"></small>
-<label>Password</label><input id="pw" type="password">
-<p><button id="authBtn">Continue</button><span id="authMsg" class="er" style="margin-left:8px"></span></p></div>
+<form id="authForm" autocomplete="on">
+<input type="text" name="username" value="admin" autocomplete="username" hidden>
+<label for="pw">Password</label><input id="pw" name="password" type="password" autocomplete="current-password" autofocus>
+<p><button id="authBtn" type="submit">Continue</button><span id="authMsg" class="er" style="margin-left:8px"></span></p></form></div>
 <div id="app" style="display:none">
 <h1>📚 ABS Hardcover Provider <button class="s" id="logout" style="float:right">Log out</button></h1>
 <div class="grid">
@@ -70,9 +72,9 @@ $('app').style.display=s.loggedIn?'':'none';$('auth').style.display=s.loggedIn?'
 if(s.loggedIn){cfg();stats();timer=setInterval(stats,5000);return;}
 $('authTitle').textContent=s.setup?'Log in':'Welcome — create your admin password';
 $('authHelp').textContent=s.setup?'':'This is the first run. Choose a password (min 8 characters) to secure this page.';
-$('authBtn').onclick=async()=>{const r=await _f('admin/api/'+(s.setup?'login':'setup'),{method:'POST',body:JSON.stringify({password:$('pw').value})});
+$('pw').autocomplete=s.setup?'current-password':'new-password';$('pw').focus();
+$('authForm').onsubmit=async(e)=>{e.preventDefault();const r=await _f('admin/api/'+(s.setup?'login':'setup'),{method:'POST',body:JSON.stringify({password:$('pw').value})});
 if(r.ok){$('pw').value='';init();}else $('authMsg').textContent=(await r.json()).error;};}
-$('pw').onkeydown=e=>e.key==='Enter'&&$('authBtn').click();
 $('logout').onclick=async()=>{await _f('admin/api/logout');init();};
 init();
 </script></body></html>
