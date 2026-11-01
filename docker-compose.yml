@@ -6,3 +6,6 @@ services:
       - "3000:3000"
     volumes:
       - ./data:/data
+    environment:
+      PUID: 1000   # user id the app runs as (find yours with `id -u`)
+      PGID: 1000   # group id (`id -g`)
