@@ -63,7 +63,7 @@ $('save').onclick=async()=>{const r=await fetch('admin/api/config',{method:'PUT'
 $('msg').textContent=r.ok?'Saved':'Failed';$('token').value='';cfg();};
 $('go').onclick=async()=>{if(!$('q').value)return;$('out').textContent='Searching…';const r=await fetch('admin/api/test?query='+encodeURIComponent($('q').value));const j=await r.json();
 $('out').textContent=j.error?'Error: '+j.error:j.matches.map(m=>`${m.title} — ${m.author||'?'} (${m.publishedYear||'?'})`).join('\n')||'No results';};
-$('q').onkeydown=e=>e.key==='Enter'&&$('go').click();
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click();});
 $('clear').onclick=async()=>{await fetch('admin/api/logs',{method:'DELETE'});stats();};
 const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.status===401&&!String(a[0]).includes('login'))init();return r;};
 let timer;
